@@ -1,0 +1,2 @@
+# collectibles
+Manage object collections
