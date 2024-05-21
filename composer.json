@@ -1,0 +1,20 @@
+{
+    "name": "rsousa/collectibles",
+    "description": "Class to manage object collections",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Collectibles\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ricardo Sousa",
+            "email": "rmbsousa@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2"
+    }
+}
