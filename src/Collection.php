@@ -1,122 +1,212 @@
 <?php
 
-/*
- * The MIT License
- *
- * Copyright 2024 rsousa.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 declare(strict_types=1);
 
 namespace Collectibles;
 
+use Collectibles\Arrays;
 use Collectibles\Contracts\IO;
 use Generator;
 use LogicException;
-use RuntimeException;
 
-class Collection implements IO {
+class Collection implements IO
+{
+    private bool $recount = false;
+    private int $size = 0;
+    private array $values = [];
 
-    protected int $collectionSize = 0;
-    protected array $values = [];
-
+    /**
+     * 
+     * @param string|null $collectionType Use valid class names only, triggers class autoloader
+     * @throws LogicException If class name is not valid
+     */
     public function __construct(
-            private readonly ?string $collectionType
+        private readonly ?string $collectionType = null
     ) {
-        
-    }
-
-    public function exists(string $name): bool {
-        return array_key_exists($name, $this->values);
-    }
-
-    public function get(string $name): mixed {
-        if (array_key_exists($name, $this->values)) {
-            return $this->values[$name];
-        }
-
-        throw new RuntimeException("Could not find collection name/key: $name");
-    }
-
-    public function getAll(): Generator {
-        foreach ($this->values as $k => $v) {
-            yield $k => $v;
+        $valid = null === $collectionType ?: class_exists($collectionType, true);
+        if (!$valid) {
+            throw new LogicException('Use valid class names only');
         }
     }
 
-    public function getAllScalar(): Generator {
-        foreach ($this->values as $k => $v) {
-            if (is_scalar($v)) {
-                yield $k => $v;
-            }
-        }
+    /**
+     * Check if collection has key
+     * 
+     * @param array|string $key
+     * @return bool
+     */
+    public function has(array|string $key): bool
+    {
+        return Arrays::hasKey($key, $this->values);
     }
 
-    public function getAllTyped(string $type): Generator {
-        foreach ($this->values as $k => $v) {
-            if ($v instanceof $type) {
-                yield $k => $v;
-            }
-        }
+    /**
+     * Get collection element by key  
+     *
+     * @param array|string|null $key If null the first element in the collection is used
+     * @return mixed
+     */
+    public function get(array|string|null $key): mixed
+    {
+        return Arrays::get(null === $key ? $this->getFirstKey() : $key, $this->values);
     }
 
-    public function getSize(): int {
-        return $this->collectionSize;
+    /**
+     * Get all collection elements
+     * 
+     * @return Generator<int|string, mixed> With collection keys
+     */
+    public function getAll(): Generator
+    {
+        yield from $this->values;
     }
 
-    public function isTypedCollection(): bool {
-        return empty($this->collectionType);
+    /**
+     * Get all scalar collection elements
+     * 
+     * @return Generator<int|string, scalar> Without collection keys
+     */
+    public function getAllScalar(): Generator
+    {
+        yield from $this->flattenArrayGenerator($this->values, fn($value) => is_scalar($value));
     }
 
-    public function set(
-            mixed $value,
-            ?string $name = null
-    ): self {
-        if ($this->collectionType) {
-            if (!($value instanceof $this->collectionType)) {
-                throw new LogicException('$value does not match collection allowed type: ' . $this->collectionType);
-            }
-            if (array_key_exists($name ?? get_class($value), $this->values)) {
-                if (is_array($name ?? get_class($value))) {
-                    $this->values[$name ?? get_class($value)][] = $value;
-                } else {
-                    $temp = $this->values[$name ?? get_class($value)];
-                    $this->values[$name ?? get_class($value)] = [
-                        $temp,
-                        $value
-                    ];
-                }
+    /**
+     * Get all collection elements of type object
+     * 
+     * @return Generator<int, object> Does not retain collection keys
+     */
+    public function getAllObjects(): Generator
+    {
+        yield from $this->flattenArrayGenerator($this->values, fn($value) => is_object($value));
+    }
+
+    /**
+     * Get all collection elements of a specified type
+     *
+     * @return Generator<int, object> Does not retain collection keys
+     */
+    public function getAllTyped(string $type): Generator
+    {
+        yield from $this->flattenArrayGenerator($this->values, fn($value) => $value instanceof $type);
+    }
+
+    /**
+     * 
+     * @param array $array
+     * @param callable $eval
+     * @return Generator
+     */
+    private function flattenArrayGenerator(array &$array, callable $eval): Generator
+    {
+        foreach ($array as $value) {
+            if (is_array($value)) {
+                // Recursively process nested arrays
+                yield from $this->flattenArrayGenerator($value, $eval);
             } else {
-                $this->values[$name ?? get_class($value)] = $value;
+                // Yield value if of type evaluated by callable
+                if ($eval($value)) {
+                    yield $value;
+                }
             }
+        }
+    }
 
-            $this->collectionSize++;
-        } else {
-            $this->values[$name ?? $this->collectionSize++] = $value;
+    /**
+     * Get collection size, counts all elements not just keys
+     * 
+     * @return int
+     */
+    public function getSize(): int
+    {
+        if ($this->recount) {
+            $this->size = Arrays::count($this->values);
+            $this->recount = !$this->recount;
         }
 
+        return $this->size;
+    }
+
+    /**
+     * Check if collection is just a specified type
+     * 
+     * @return bool
+     */
+    public function isTypedCollection(): bool
+    {
+        return $this->collectionType !== null;
+    }
+
+    /**
+     * 
+     * Add element to collection, duplicates allowed
+     * 
+     * @param mixed $value
+     * @param string|null $key
+     * @return self
+     * @throws LogicException If value type does match collection type (if typed collection)
+     */
+    public function add(mixed $value, array|string|null $key = null): self
+    {
+        // Validate type if collection is typed
+        if ($this->isTypedCollection() && !$value instanceof $this->collectionType) {
+            throw new LogicException("Value does not match collection type: {$this->collectionType}");
+        }
+
+        Arrays::add(null === $key ? $this->getFirstKey() : $key, $value, $this->values);
+        $this->recount = true;
         return $this;
     }
 
-    public function toArray(): array {
+    /**
+     * Set or replace element at specific collection key
+     * 
+     * @param mixed $value
+     * @param array|string|null $key
+     * @return self
+     * @throws LogicException If value type does match collection type (if typed collection)
+     */
+    public function set(mixed $value, array|string|null $key = null): self
+    {
+        // Validate type if collection is typed
+        if ($this->isTypedCollection() && !$value instanceof $this->collectionType) {
+            throw new LogicException("Value does not match collection type: {$this->collectionType}");
+        }
+
+        Arrays::set(null === $key ? $this->getFirstKey() : $key, $value, $this->values);
+        $this->recount = true;
+        return $this;
+    }
+
+    /**
+     * Delete specific collection key
+     * 
+     * @param mixed $value
+     * @param array|string|null $key
+     * @return mixed
+     */
+    public function delete(array|string|null $key = null): mixed
+    {
+        $this->recount = true;
+        return Arrays::delete(null === $key ? $this->getFirstKey() : $key, $this->values);
+    }
+
+    /**
+     * 
+     * @return array<mixed, mixed>
+     */
+    public function toArray(): array
+    {
         return $this->values;
+    }
+
+    /**
+     * 
+     * @return string The first key in the collection
+     */
+    private function getFirstKey(): string
+    {
+        reset($this->values);
+        return (string)key($this->values);
     }
 }
