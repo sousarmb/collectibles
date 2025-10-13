@@ -1,2 +1,2 @@
 # collectibles
-Manage object collections
+Manage arrays and object collections
