@@ -8,6 +8,7 @@ use Collectibles\Arrays;
 use Collectibles\Contracts\IO;
 use Generator;
 use LogicException;
+use RuntimeException;
 
 class Collection implements IO
 {
@@ -235,5 +236,33 @@ class Collection implements IO
 
         reset($this->values);
         return (string)key($this->values);
+    }
+
+    /**
+     * 
+     * @param array $values The array to merge into the collection
+     */
+    public function mergeInto(array $values): void
+    {
+        if ([] === $values) return;
+
+        $this->values = $this->values + $values;
+    }
+
+    /**
+     * 
+     * @param array $values
+     * @param array|string|null $key 
+     * @throws RuntimeException If $key not found
+     */
+    public function mergeIntoAt(
+        array $values,
+        array|string|null $key
+    ): void {
+        if (!$this->has($key)) {
+            throw new RuntimeException("$key not found in collection");
+        }
+
+        $this->set([$this->get($key)] + $values, $key);
     }
 }

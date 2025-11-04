@@ -226,4 +226,64 @@ class CollectionTest extends TestCase
         $collection->add($object, 'key2');
         $this->assertEquals(['key1' => 'value1', 'key2' => ['value2', $object]], $collection->toArray());
     }
+
+    /**
+     * @covers \Collectibles\Collection::mergeInto
+     */
+    public function testMergeArrayIntoCollection(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set('value2', 'key2');
+        $collection->mergeInto(['key3' => 'value3']);
+        $this->assertEquals(['key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3'], $collection->toArray());
+    }
+
+    /**
+     * @covers \Collectibles\Collection::mergeInto
+     */
+    public function testGetValueFromMergedArrayIntoCollection(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set('value2', 'key2');
+        $collection->mergeInto(['key3' => 'value3']);
+        $this->assertEquals('value3', $collection->get('key3'));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::mergeIntoAt
+     */
+    public function testMergeArrayIntoCollectionAtSpecificKey(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set('value2', 'key2');
+        $collection->mergeIntoAt(['key3' => 'value3'], 'key2');
+        $this->assertEquals(['key1' => 'value1', 'key2' => ['value2', 'key3' => 'value3']], $collection->toArray());
+    }
+
+    /**
+     * @covers \Collectibles\Collection::mergeIntoAt
+     */
+    public function testMergeArrayIntoCollectionAtSpecificKeyGetSpecificKey(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set('value2', 'key2');
+        $collection->mergeIntoAt(['key3' => 'value3'], 'key2');
+        $this->assertEquals('value3', $collection->get('key2.key3'));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::mergeIntoAt
+     */
+    public function testThrowRuntimeExceptionOnMergeArrayIntoCollectionAtSpecificInvalidKey(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set('value2', 'key2');
+        $this->expectException(RuntimeException::class);
+        $collection->mergeIntoAt(['key3' => 'value3'], 'key22');
+    }
 }
