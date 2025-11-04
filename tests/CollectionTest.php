@@ -47,11 +47,11 @@ class CollectionTest extends TestCase
     /**
      * @covers \Collectibles\Collection::get
      */
-    public function testGetThrowsExceptionForInvalidKey(): void
+    public function testGetReturnDefaultValueForInvalidKey(): void
     {
-        $this->expectException(RuntimeException::class);
         $collection = new Collection();
-        $collection->get('test.key');
+        $expected = 'default value';
+        $this->assertEquals($expected, $collection->get('test.key', $expected));
     }
 
     /**

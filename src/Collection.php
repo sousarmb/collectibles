@@ -44,11 +44,23 @@ class Collection implements IO
      * Get collection element by key  
      *
      * @param array|string|null $key If null the first element in the collection is used
+     * @param mixed $default Returned if key not found
      * @return mixed
      */
-    public function get(array|string|null $key): mixed
-    {
-        return Arrays::get(null === $key ? $this->getFirstKey() : $key, $this->values);
+    public function get(
+        array|string|null $key,
+        $default = null
+    ): mixed {
+        if ([] === $this->values) {
+            return $default;
+        }
+
+        $key = null === $key ? $this->getFirstKey() : $key;
+        if (!Arrays::hasKey($key, $this->values)) {
+            return $default;
+        }
+
+        return Arrays::get($key, $this->values);
     }
 
     /**
@@ -153,7 +165,11 @@ class Collection implements IO
             throw new LogicException("Value does not match collection type: {$this->collectionType}");
         }
 
-        Arrays::add(null === $key ? $this->getFirstKey() : $key, $value, $this->values);
+        Arrays::add(
+            null === $key ? $this->getFirstKey() : $key,
+            $value,
+            $this->values
+        );
         $this->recount = true;
         return $this;
     }
@@ -173,7 +189,11 @@ class Collection implements IO
             throw new LogicException("Value does not match collection type: {$this->collectionType}");
         }
 
-        Arrays::set(null === $key ? $this->getFirstKey() : $key, $value, $this->values);
+        Arrays::set(
+            null === $key ? $this->getFirstKey() : $key,
+            $value,
+            $this->values
+        );
         $this->recount = true;
         return $this;
     }
@@ -188,7 +208,10 @@ class Collection implements IO
     public function delete(array|string|null $key = null): mixed
     {
         $this->recount = true;
-        return Arrays::delete(null === $key ? $this->getFirstKey() : $key, $this->values);
+        return Arrays::delete(
+            null === $key ? $this->getFirstKey() : $key,
+            $this->values
+        );
     }
 
     /**
@@ -202,10 +225,14 @@ class Collection implements IO
 
     /**
      * 
-     * @return string The first key in the collection
+     * @return int|string The first key in the collection
      */
-    private function getFirstKey(): string
+    private function getFirstKey(): int|string
     {
+        if ([] === $this->values) {
+            return 0;
+        }
+
         reset($this->values);
         return (string)key($this->values);
     }
