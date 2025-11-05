@@ -15,6 +15,7 @@ class Collection implements IO
     private bool $recount = false;
     private int $size = 0;
     private array $values = [];
+    private string $defaultKey = '0';
 
     /**
      * 
@@ -56,7 +57,7 @@ class Collection implements IO
             return $default;
         }
 
-        $key = null === $key ? $this->getFirstKey() : $key;
+        $key = null === $key ? $this->getFirstOrDefaultKey() : $key;
         if (!Arrays::hasKey($key, $this->values)) {
             return $default;
         }
@@ -167,7 +168,7 @@ class Collection implements IO
         }
 
         Arrays::add(
-            null === $key ? $this->getFirstKey() : $key,
+            null === $key ? $this->getFirstOrDefaultKey() : $key,
             $value,
             $this->values
         );
@@ -191,7 +192,7 @@ class Collection implements IO
         }
 
         Arrays::set(
-            null === $key ? $this->getFirstKey() : $key,
+            null === $key ? $this->getFirstOrDefaultKey() : $key,
             $value,
             $this->values
         );
@@ -210,7 +211,7 @@ class Collection implements IO
     {
         $this->recount = true;
         return Arrays::delete(
-            null === $key ? $this->getFirstKey() : $key,
+            null === $key ? $this->getFirstOrDefaultKey() : $key,
             $this->values
         );
     }
@@ -226,16 +227,11 @@ class Collection implements IO
 
     /**
      * 
-     * @return int|string The first key in the collection
+     * @return string The first key in the collection, if collection empty then $this->defaultKey
      */
-    private function getFirstKey(): int|string
+    private function getFirstOrDefaultKey(): string
     {
-        if ([] === $this->values) {
-            return 0;
-        }
-
-        reset($this->values);
-        return (string)key($this->values);
+        return array_key_first($this->values) ?: $this->defaultKey;
     }
 
     /**
