@@ -25,7 +25,8 @@ class Collection implements IO
     public function __construct(
         private readonly ?string $collectionType = null
     ) {
-        $valid = null === $collectionType ?: class_exists($collectionType, true);
+        $valid = null === $collectionType 
+            ?: (class_exists($collectionType, true) || interface_exists($collectionType, true));
         if (!$valid) {
             throw new LogicException('Use valid class names only');
         }
