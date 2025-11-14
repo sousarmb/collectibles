@@ -15,7 +15,7 @@ class Collection implements IO
     private bool $recount = false;
     private int $size = 0;
     private array $values = [];
-    private string $defaultKey = '0';
+    private int $defaultKey = 0;
 
     /**
      * 
@@ -35,10 +35,10 @@ class Collection implements IO
     /**
      * Check if collection has key
      * 
-     * @param array|string $key
+     * @param array|int|string $key
      * @return bool
      */
-    public function has(array|string $key): bool
+    public function has(array|int|string $key): bool
     {
         return Arrays::hasKey($key, $this->values);
     }
@@ -46,12 +46,12 @@ class Collection implements IO
     /**
      * Get collection element by key  
      *
-     * @param array|string|null $key If null the first element in the collection is used
+     * @param array|int|string|null $key If null the first element in the collection is used
      * @param mixed $default Returned if key not found
      * @return mixed
      */
     public function get(
-        array|string|null $key,
+        array|int|string|null $key = null,
         $default = null
     ): mixed {
         if ([] === $this->values) {
@@ -112,8 +112,10 @@ class Collection implements IO
      * @param callable $eval
      * @return Generator
      */
-    private function flattenArrayGenerator(array &$array, callable $eval): Generator
-    {
+    private function flattenArrayGenerator(
+        array &$array,
+        callable $eval
+    ): Generator {
         foreach ($array as $value) {
             if (is_array($value)) {
                 // Recursively process nested arrays
@@ -157,12 +159,14 @@ class Collection implements IO
      * Add element to collection, duplicates allowed
      * 
      * @param mixed $value
-     * @param string|null $key
+     * @param array|int|string|null $key
      * @return self
      * @throws LogicException If value type does match collection type (if typed collection)
      */
-    public function add(mixed $value, array|string|null $key = null): self
-    {
+    public function add(
+        mixed $value,
+        array|int|string|null $key = null
+    ): self {
         // Validate type if collection is typed
         if ($this->isTypedCollection() && !$value instanceof $this->collectionType) {
             throw new LogicException("Value does not match collection type: {$this->collectionType}");
@@ -181,12 +185,14 @@ class Collection implements IO
      * Set or replace element at specific collection key
      * 
      * @param mixed $value
-     * @param array|string|null $key
+     * @param array|int|string|null $key
      * @return self
      * @throws LogicException If value type does match collection type (if typed collection)
      */
-    public function set(mixed $value, array|string|null $key = null): self
-    {
+    public function set(
+        mixed $value,
+        array|int|string|null $key = null
+    ): self {
         // Validate type if collection is typed
         if ($this->isTypedCollection() && !$value instanceof $this->collectionType) {
             throw new LogicException("Value does not match collection type: {$this->collectionType}");
@@ -205,10 +211,10 @@ class Collection implements IO
      * Delete specific collection key
      * 
      * @param mixed $value
-     * @param array|string|null $key
+     * @param array|int|string|null $key
      * @return mixed
      */
-    public function delete(array|string|null $key = null): mixed
+    public function delete(array|int|string|null $key = null): mixed
     {
         $this->recount = true;
         return Arrays::delete(
@@ -228,9 +234,9 @@ class Collection implements IO
 
     /**
      * 
-     * @return string The first key in the collection, if collection empty then $this->defaultKey
+     * @return mixed The first key in the collection, if collection empty then $this->defaultKey
      */
-    private function getFirstOrDefaultKey(): string
+    private function getFirstOrDefaultKey(): mixed
     {
         return array_key_first($this->values) ?: $this->defaultKey;
     }
@@ -249,12 +255,12 @@ class Collection implements IO
     /**
      * 
      * @param array $values
-     * @param array|string|null $key 
+     * @param array|int|string|null $key 
      * @throws RuntimeException If $key not found
      */
     public function mergeIntoAt(
         array $values,
-        array|string|null $key
+        array|int|string|null $key
     ): void {
         if (!$this->has($key)) {
             throw new RuntimeException("$key not found in collection");

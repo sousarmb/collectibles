@@ -37,6 +37,16 @@ class CollectionTest extends TestCase
     /**
      * @covers \Collectibles\Collection::get
      */
+    public function testGetReturnsValueForValidIntegerKey(): void
+    {
+        $collection = new Collection();
+        $collection->set('value', 1);
+        $this->assertEquals('value', $collection->get(1));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::get
+     */
     public function testGetReturnsValueForValidKey(): void
     {
         $collection = new Collection();
@@ -162,11 +172,34 @@ class CollectionTest extends TestCase
     /**
      * @covers \Collectibles\Collection::add
      */
+    public function testAddInsertsValueUseDefaultKey(): void
+    {
+        $collection = new Collection();
+        $collection->add('value1');
+        $collection->add('value2');
+        $this->assertEquals(['value1', 'value2'], $collection->get());
+    }
+
+    /**
+     * @covers \Collectibles\Collection::add
+     */
     public function testAddThrowsExceptionForInvalidTypeInTypedCollection(): void
     {
         $this->expectException(LogicException::class);
         $collection = new Collection(stdClass::class);
         $collection->add('string', 'test.key');
+    }
+
+    /**
+     * @covers \Collectibles\Collection::set
+     */
+    public function testSetReplacesValueUseDefaultKey(): void
+    {
+        $collection = new Collection();
+        $collection->add('value1');
+        $collection->add('value2');
+        $collection->set('value3');
+        $this->assertEquals('value3', $collection->get());
     }
 
     /**
@@ -188,6 +221,21 @@ class CollectionTest extends TestCase
         $this->expectException(LogicException::class);
         $collection = new Collection(stdClass::class);
         $collection->set('string', 'test.key');
+    }
+
+    /**
+     * @covers \Collectibles\Collection::delete
+     */
+    public function testDeleteRemovesValueAndReturnsItWithIntegerKey(): void
+    {
+        $collection = new Collection();
+        $collection->set('value', 'test.key');
+        $collection->set('othervalue', 'test.otherkey');
+        $collection->set(123456, 7);
+        $deleted = $collection->delete(7);
+        $this->assertEquals(123456, $deleted);
+        $this->assertFalse($collection->has(7));
+        $this->assertTrue($collection->has('test.otherkey'));
     }
 
     /**

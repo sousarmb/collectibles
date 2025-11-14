@@ -33,13 +33,13 @@ abstract class Arrays
     /**
      * Check if key exists in nested array using dot notation or array of keys
      *
-     * @param array|string $needle
+     * @param array|int|string $needle
      * @param array $haystack
      * @param string $separator
      * @return bool
      */
     public static function hasKey(
-        array|string $needle,
+        array|int|string $needle,
         array $haystack,
         string $separator = self::DEFAULT_SEPARATOR
     ): bool {
@@ -60,7 +60,7 @@ abstract class Arrays
     /**
      * Get value from nested array using dot notation or array of keys
      *
-     * @param array|string $needle
+     * @param array|int|string $needle
      * @param array $haystack
      * @param string $separator
      * @return mixed
@@ -68,7 +68,7 @@ abstract class Arrays
      * @throws RuntimeException When key is invalid 
      */
     public static function get(
-        array|string $needle,
+        array|int|string $needle,
         array &$haystack,
         string $separator = self::DEFAULT_SEPARATOR
     ): mixed {
@@ -89,14 +89,14 @@ abstract class Arrays
     /**
      * Add a value to a nested array using dot notation or array of keys, duplicates allowed
      *
-     * @param array|string $needle
+     * @param array|int|string $needle
      * @param mixed $value
      * @param array $haystack
      * @param string $separator
      * @return void
      */
     public static function add(
-        array|string $needle,
+        array|int|string $needle,
         mixed $value,
         array &$haystack,
         string $separator = self::DEFAULT_SEPARATOR
@@ -125,14 +125,14 @@ abstract class Arrays
     /**
      * Set or replace a value in a nested array using dot notation or array of keys
      *
-     * @param array|string $needle
+     * @param array|int|string $needle
      * @param mixed $value
      * @param array $haystack
      * @param string $separator
      * @return void
      */
     public static function set(
-        array|string $needle,
+        array|int|string $needle,
         mixed $value,
         array &$haystack,
         string $separator = self::DEFAULT_SEPARATOR
@@ -291,15 +291,15 @@ abstract class Arrays
     /**
      * Delete a value from nested array using dot notation or array of keys
      * 
-     * @param array|string $needle
+     * @param array|int|string $needle
      * @param array $haystack
-     * @param array|string $separator
+     * @param string $separator
      * @return mixed The deleted value
      * @throws RuntimeException When haystack is empty
      * @throws RuntimeException When key is invalid
      */
     public static function delete(
-        array|string $needle,
+        array|int|string $needle,
         array &$haystack,
         string $separator = self::DEFAULT_SEPARATOR
     ): mixed {
@@ -322,14 +322,18 @@ abstract class Arrays
 
     /**
      * 
-     * @param array|string $needle
+     * @param array|int|string $needle
      * @param string $separator
      * @return array<int, mixed> First value is $key, second is remaining needle
      * @throws RuntimeException When needle is empty
      */
-    private static function getKeyFromNeedle(array|string $needle, string $separator): array
-    {
-        if ([] === $needle) {
+    private static function getKeyFromNeedle(
+        array|int|string $needle,
+        string $separator
+    ): array {
+        if (is_int($needle)) {
+            return [$needle, []];
+        } elseif ([] === $needle) {
             throw new RuntimeException('Empty needle');
         } elseif (is_string($needle)) {
             if ('' === trim($needle)) {

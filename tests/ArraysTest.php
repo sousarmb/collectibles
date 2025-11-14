@@ -36,6 +36,24 @@ class ArraysTest extends TestCase
     /**
      * @covers \Collectibles\Arrays::hasKey
      */
+    public function testHasKeyWithIntegerNeedle(): void
+    {
+        $haystack = ['a' => ['b' => ['c' => 1, 'd' => 2]], 13];
+        $this->assertTrue(Arrays::hasKey(0, $haystack));
+    }
+
+    /**
+     * @covers \Collectibles\Arrays::hasKey
+     */
+    public function testHasKeyWithInvalidIntegerNeedle(): void
+    {
+        $haystack = ['a' => ['b' => ['c' => 1, 'd' => 2]], 13];
+        $this->assertFalse(Arrays::hasKey(1, $haystack));
+    }
+
+    /**
+     * @covers \Collectibles\Arrays::hasKey
+     */
     public function testHasKeyWithDotNotation(): void
     {
         $haystack = ['a' => ['b' => ['c' => 1, 'd' => 2]]];
@@ -157,6 +175,17 @@ class ArraysTest extends TestCase
     /**
      * @covers \Collectibles\Arrays::add
      */
+    public function testAddWithIntegerNeedle(): void
+    {
+        $haystack = ['a' => ['b' => [1]], 1];
+        Arrays::add(0, 2, $haystack);
+        Arrays::add(0, 3, $haystack);
+        $this->assertEquals(['a' => ['b' => [1]], [1, 2, 3]], $haystack);
+    }
+
+    /**
+     * @covers \Collectibles\Arrays::add
+     */
     public function testAddWithDotNotation(): void
     {
         $haystack = ['a' => ['b' => [1]]];
@@ -203,6 +232,16 @@ class ArraysTest extends TestCase
         $haystack = [];
         Arrays::add('a.b.c', 42, $haystack);
         $this->assertEquals(['a' => ['b' => ['c' => 42]]], $haystack);
+    }
+
+    /**
+     * @covers \Collectibles\Arrays::set
+     */
+    public function testSetWithIntegerNeedle(): void
+    {
+        $haystack = ['a' => ['b' => 1], ['c', 'd']];
+        Arrays::set(0, 'd', $haystack);
+        $this->assertEquals(['a' => ['b' => 1], 'd'], $haystack);
     }
 
     /**
@@ -508,6 +547,26 @@ class ArraysTest extends TestCase
     {
         $array = [];
         $this->assertEquals(0, Arrays::count($array));
+    }
+
+    /**
+     * @covers \Collectibles\Arrays::delete
+     */
+    public function testDeleteWithIntegerNeedle(): void
+    {
+        $haystack = ['a' => ['b' => 42, 'c' => 43], 44];
+        $this->assertEquals(44, Arrays::delete(0, $haystack));
+        $this->assertEquals(['a' => ['b' => 42, 'c' => 43]], $haystack);
+    }
+
+    /**
+     * @covers \Collectibles\Arrays::delete
+     */
+    public function testDeleteWithInvalidIntegerNeedle(): void
+    {
+        $haystack = ['a' => ['b' => 42, 'c' => 43], 44];
+        $this->expectException(RuntimeException::class);
+        Arrays::delete(1, $haystack);
     }
 
     /**
