@@ -286,4 +286,83 @@ class CollectionTest extends TestCase
         $this->expectException(RuntimeException::class);
         $collection->mergeIntoAt(['key3' => 'value3'], 'key22');
     }
+
+    /**
+     * @covers \Collectibles\Collection::getAsCollection
+     */
+    public function testReturnsCollectionWithSingleValueWhenScalar(): void
+    {
+        $collection = new Collection();
+        $collection->set('hello', 'greeting');
+
+        $result = $collection->getAsCollection('greeting');
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertSame('hello', $result->get('greeting'));
+        $this->assertCount(1, iterator_to_array($result->getAll()));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::getAsCollection
+     */
+    public function testReturnsCollectionFromArrayValue(): void
+    {
+        $collection = new Collection();
+        $collection->set(['a' => 1, 'b' => 2], 'data');
+
+        $result = $collection->getAsCollection('data');
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertSame(1, $result->get('a'));
+        $this->assertSame(2, $result->get('b'));
+        $this->assertCount(2, iterator_to_array($result->getAll()));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::getAsCollection
+     */
+    public function testReturnsCollectionFromNestedCollection(): void
+    {
+        $inner = new Collection();
+        $inner->add('x', 'foo');
+        $inner->add('y', 'bar');
+
+        $collection = new Collection();
+        $collection->set($inner, 'nested');
+
+        $result = $collection->getAsCollection('nested');
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertSame('x', $result->get('foo'));
+        $this->assertSame('y', $result->get('bar'));
+        $this->assertCount(2, iterator_to_array($result->getAll()));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::getAsCollection
+     */
+    public function testReturnsNewCollectionWithKeyWhenValueIsNull(): void
+    {
+        $collection = new Collection();
+        $collection->set(null, 'empty');
+
+        $result = $collection->getAsCollection('empty');
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertNull($result->get('empty'));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::getAsCollection
+     */
+    public function testHandlesEmptyArrayGracefully(): void
+    {
+        $collection = new Collection();
+        $collection->set([], 'empty');
+
+        $result = $collection->getAsCollection('empty');
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertCount(0, iterator_to_array($result->getAll()));
+    }
 }
