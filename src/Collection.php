@@ -25,7 +25,7 @@ class Collection implements IO
     public function __construct(
         private readonly ?string $collectionType = null
     ) {
-        $valid = null === $collectionType 
+        $valid = null === $collectionType
             ?: (class_exists($collectionType, true) || interface_exists($collectionType, true));
         if (!$valid) {
             throw new LogicException('Use valid class names only');
@@ -261,5 +261,31 @@ class Collection implements IO
         }
 
         $this->set([$this->get($key)] + $values, $key);
+    }
+
+    /**
+     * 
+     * Get key => value from this collection as a new collection
+     * 
+     * @param string $key The key => value to get
+     * @return Collection
+     */
+    public function getAsCollection($key): Collection
+    {
+        $newColl = new Collection();
+        $tmp = $this->get($key);
+        if ($tmp instanceof Collection) {
+            foreach ($tmp->getAll() as $k => $v) {
+                $newColl->set($v, $k);
+            }
+        } elseif (is_array($tmp)) {
+            foreach ($tmp as $k => $v) {
+                $newColl->set($v, $k);
+            }
+        } else {
+            $newColl->set($tmp, $key);
+        }
+
+        return $newColl;
     }
 }

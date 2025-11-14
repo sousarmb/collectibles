@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Collectibles;
 
-use Collectibles\Contracts\IO as IOInterface;
+use Collectibles\Contracts\IO as IOContract;
 use LogicException;
 
-readonly class IO implements IOInterface
+readonly class IO implements IOContract
 {
     public function get(string $name): mixed
     {
