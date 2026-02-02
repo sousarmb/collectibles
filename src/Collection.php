@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Collectibles;
 
 use Collectibles\Arrays;
-use Collectibles\Contracts\IO;
+use Collectibles\Contracts\Collection as CollectionContract;
 use Generator;
 use LogicException;
 use RuntimeException;
 
-class Collection implements IO
+class Collection implements CollectionContract
 {
     private bool $recount = false;
     private int $size = 0;
@@ -32,24 +32,11 @@ class Collection implements IO
         }
     }
 
-    /**
-     * Check if collection has key
-     * 
-     * @param array|int|string $key
-     * @return bool
-     */
     public function has(array|int|string $key): bool
     {
         return Arrays::hasKey($key, $this->values);
     }
 
-    /**
-     * Get collection element by key  
-     *
-     * @param array|int|string|null $key If null the first element in the collection is used
-     * @param mixed $default Returned if key not found
-     * @return mixed
-     */
     public function get(
         array|int|string|null $key = null,
         $default = null
@@ -59,55 +46,32 @@ class Collection implements IO
         }
 
         $key = null === $key ? $this->getFirstOrDefaultKey() : $key;
-        if (!Arrays::hasKey($key, $this->values)) {
-            return $default;
-        }
-
-        return Arrays::get($key, $this->values);
+        return Arrays::hasKey($key, $this->values)
+            ? Arrays::get($key, $this->values)
+            : $default;
     }
 
-    /**
-     * Get all collection elements
-     * 
-     * @return Generator<int|string, mixed> With collection keys
-     */
     public function getAll(): Generator
     {
         yield from $this->values;
     }
 
-    /**
-     * Get all scalar collection elements
-     * 
-     * @return Generator<int|string, scalar> Without collection keys
-     */
     public function getAllScalar(): Generator
     {
         yield from $this->flattenArrayGenerator($this->values, fn($value) => is_scalar($value));
     }
 
-    /**
-     * Get all collection elements of type object
-     * 
-     * @return Generator<int, object> Does not retain collection keys
-     */
     public function getAllObjects(): Generator
     {
         yield from $this->flattenArrayGenerator($this->values, fn($value) => is_object($value));
     }
 
-    /**
-     * Get all collection elements of a specified type
-     *
-     * @return Generator<int, object> Does not retain collection keys
-     */
     public function getAllTyped(string $type): Generator
     {
         yield from $this->flattenArrayGenerator($this->values, fn($value) => $value instanceof $type);
     }
 
     /**
-     * 
      * @param array $array
      * @param callable $eval
      * @return Generator
@@ -129,11 +93,6 @@ class Collection implements IO
         }
     }
 
-    /**
-     * Get collection size, counts all elements not just keys
-     * 
-     * @return int
-     */
     public function getSize(): int
     {
         if ($this->recount) {
@@ -144,25 +103,23 @@ class Collection implements IO
         return $this->size;
     }
 
-    /**
-     * Check if collection is just a specified type
-     * 
-     * @return bool
-     */
+    public function getType(array|int|string|null $key = null): string
+    {
+        if ([] === $this->values) {
+            throw new LogicException('Empty collection');
+        }
+        if (is_null($key)) {
+            return gettype($this->values[$this->defaultKey]);
+        }
+
+        return gettype($this->get($key));
+    }
+
     public function isTypedCollection(): bool
     {
         return $this->collectionType !== null;
     }
 
-    /**
-     * 
-     * Add element to collection, duplicates allowed
-     * 
-     * @param mixed $value
-     * @param array|int|string|null $key
-     * @return self
-     * @throws LogicException If value type does match collection type (if typed collection)
-     */
     public function add(
         mixed $value,
         array|int|string|null $key = null
@@ -181,14 +138,6 @@ class Collection implements IO
         return $this;
     }
 
-    /**
-     * Set or replace element at specific collection key
-     * 
-     * @param mixed $value
-     * @param array|int|string|null $key
-     * @return self
-     * @throws LogicException If value type does match collection type (if typed collection)
-     */
     public function set(
         mixed $value,
         array|int|string|null $key = null
@@ -207,13 +156,6 @@ class Collection implements IO
         return $this;
     }
 
-    /**
-     * Delete specific collection key
-     * 
-     * @param mixed $value
-     * @param array|int|string|null $key
-     * @return mixed
-     */
     public function delete(array|int|string|null $key = null): mixed
     {
         $this->recount = true;
@@ -223,17 +165,12 @@ class Collection implements IO
         );
     }
 
-    /**
-     * 
-     * @return array<mixed, mixed>
-     */
     public function toArray(): array
     {
         return $this->values;
     }
 
     /**
-     * 
      * @return mixed The first key in the collection, if collection empty then $this->defaultKey
      */
     private function getFirstOrDefaultKey(): mixed
@@ -241,23 +178,16 @@ class Collection implements IO
         return array_key_first($this->values) ?: $this->defaultKey;
     }
 
-    /**
-     * 
-     * @param array $values The array to merge into the collection
-     */
     public function mergeInto(array $values): void
     {
-        if ([] === $values) return;
+        if ([] === $values) {
+            throw new LogicException('Empty collection');
+        }
 
         $this->values = $this->values + $values;
+        $this->recount = true;
     }
 
-    /**
-     * 
-     * @param array $values
-     * @param array|int|string|null $key 
-     * @throws RuntimeException If $key not found
-     */
     public function mergeIntoAt(
         array $values,
         array|int|string|null $key
@@ -266,16 +196,15 @@ class Collection implements IO
             throw new RuntimeException("$key not found in collection");
         }
 
-        $this->set([$this->get($key)] + $values, $key);
+        if ('array' === $this->getType($key)) {
+            $this->set($this->get($key) + $values, $key);
+        } else {
+            $this->set([$this->get($key)] + $values, $key);
+        }
+
+        $this->recount = true;
     }
 
-    /**
-     * 
-     * Get key => value from this collection as a new collection
-     * 
-     * @param string $key The key => value to get
-     * @return Collection
-     */
     public function getAsCollection($key): Collection
     {
         $newColl = new Collection();
