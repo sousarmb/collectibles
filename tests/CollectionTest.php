@@ -142,6 +142,21 @@ class CollectionTest extends TestCase
     }
 
     /**
+     * @covers \Collectibles\Collection::getType
+     */
+    public function testGetValueTypeFromCollection(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set(2.2, 'key2');
+        $collection->set(['key4' => 'value4'], 'key3');
+        $this->assertEquals('string', $collection->getType('key1'));
+        $this->assertEquals('double', $collection->getType('key2'));
+        $this->assertEquals('array', $collection->getType('key3'));
+        $this->assertEquals('string', $collection->getType('key3.key4'));
+    }
+
+    /**
      * @covers \Collectibles\Collection::isTypedCollection
      */
     public function testIsTypedCollectionReturnsTrueForTyped(): void
@@ -297,6 +312,18 @@ class CollectionTest extends TestCase
         $collection->set('value2', 'key2');
         $collection->mergeInto(['key3' => 'value3']);
         $this->assertEquals('value3', $collection->get('key3'));
+    }
+
+    /**
+     * @covers \Collectibles\Collection::mergeIntoAt
+     */
+    public function testMergeArrayIntoCollectionArrayAtSpecificKey(): void
+    {
+        $collection = new Collection();
+        $collection->set('value1', 'key1');
+        $collection->set(['value2', 'value3'], 'key2');
+        $collection->mergeIntoAt(['key3' => 'value4'], 'key2');
+        $this->assertEquals(['key1' => 'value1', 'key2' => ['value2', 'value3', 'key3' => 'value4']], $collection->toArray());
     }
 
     /**
